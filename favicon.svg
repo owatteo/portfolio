@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="31.88" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 257">
+  <!-- Фон (прозрачный) -->
+  <rect width="256" height="257" fill="none"/>
+  <!-- Равносторонний треугольник, только контур, белый, сдвинут к левому краю -->
+  <polygon points="117,50 209,210 25,210" fill="none" stroke="white" stroke-width="24"/>
+  <!-- Символ ², белый, крупный, сдвинут вправо -->
+  <text x="180" y="165" font-family="Arial, sans-serif" font-size="216" fill="white">²</text>
+</svg>
