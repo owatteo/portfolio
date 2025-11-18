@@ -26,6 +26,7 @@ import v3 from './assets/vertical/v3.jpg';
 import v4 from './assets/vertical/v4.jpg';
 import v5 from './assets/vertical/v5.jpg';
 import v6 from './assets/vertical/v6.jpg';
+import MobileHeader from './components/mobile/MobileHeader';
 
 const horizontals = [h1, h2, h3, h4, h5, h6, h7];
 const verticals = [v1, v2, v3, v4, v5, v6];
@@ -165,33 +166,40 @@ function DesktopVersion() {
     else if (localIndex <= 0) setWindowStart((p) => (p - 1 + total) % total);
   };
 
+  // --- Управление автоплеем через методы Swiper ---
+  useEffect(() => {
+    if (!swiperRef.current) return;
+    if (isAutoplay) swiperRef.current.autoplay.start();
+    else swiperRef.current.autoplay.stop();
+  }, [isAutoplay]);
+
   // --- Таймер возврата автоплея ---
   useEffect(() => {
     if (!isAutoplay) {
-      const timer = setTimeout(() => setIsAutoplay(true), 12000);
+      const timer = setTimeout(() => setIsAutoplay(true), 10000);
       return () => clearTimeout(timer);
     }
-  }, [isAutoplay, lastActionTime]);
+  }, [lastActionTime, isAutoplay]);
 
   // --- Обработка прокрутки колесом мыши ---
   useEffect(() => {
     let scrollTimeout = null;
     const handleWheel = (e) => {
       if (!swiperRef.current) return;
-      if (scrollTimeout) return; // блокируем спам
+      if (scrollTimeout) return;
 
       const delta = e.deltaY || e.wheelDelta;
       if (Math.abs(delta) < 10) return;
 
-      setIsAutoplay(false);
-      setLastActionTime(Date.now());
+      setIsAutoplay(false);              // отключаем автоплей
+      setLastActionTime(Date.now());     // перезапуск таймера
+      swiperRef.current.autoplay.stop(); // явная остановка
 
-      // === Быстрое переключение по "галерее" ===
-      const step = 1; // сколько слайдов прокручивать за раз
+      const step = 1;
       if (delta > 0) swiperRef.current.slideToLoop((swiperRef.current.realIndex + step) % total);
       else swiperRef.current.slideToLoop((swiperRef.current.realIndex - step + total) % total);
 
-      scrollTimeout = setTimeout(() => (scrollTimeout = null), 200);
+      scrollTimeout = setTimeout(() => (scrollTimeout = null), 250);
     };
 
     window.addEventListener('wheel', handleWheel, { passive: true });
@@ -219,8 +227,8 @@ function DesktopVersion() {
         modules={[EffectFade, Autoplay]}
         effect="fade"
         fadeEffect={{ crossFade: true }}
-        autoplay={isAutoplay ? { delay: 12000, disableOnInteraction: false } : false}
-        speed={1500}
+        autoplay={{ delay: 10000, disableOnInteraction: false }}
+        speed={1000}
         loop={true}
         onSwiper={(s) => (swiperRef.current = s)}
         onSlideChange={handleSlideChange}
@@ -275,6 +283,7 @@ function DesktopVersion() {
               onClick={() => {
                 swiperRef.current?.slideToLoop(realIndex);
                 setIsAutoplay(false);
+                swiperRef.current?.autoplay.stop();
                 setLastActionTime(Date.now());
               }}
               style={{
@@ -298,32 +307,15 @@ function DesktopVersion() {
 }
 
 /* -------------------------------------------------
-   Мобильная версия (автоплей + вертикальный скролл)
+   Мобильная версия (только вертикальный скролл, без autoplay)
 -------------------------------------------------- */
 function MobileVersion() {
   const slides = buildMobileSlides(horizontals, verticals);
   const containerRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Автоплей
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-      const nextY =
-        ((currentSlide + 1) * window.innerWidth * 9) / 16;
-      containerRef.current?.scrollTo({
-        top: nextY,
-        behavior: 'smooth',
-      });
-    }, 7000);
-    return () => clearInterval(interval);
-  }, [isPlaying, currentSlide, slides.length]);
 
   return (
     <>
-      {/* Скроллируемый контейнер — pointerEvents: 'none' при автоплее */}
+      {/* Скроллируемая галерея */}
       <div
         ref={containerRef}
         style={{
@@ -337,10 +329,9 @@ function MobileVersion() {
           padding: 0,
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
-          pointerEvents: isPlaying ? 'none' : 'auto',
         }}
       >
-        {/* Скрываем ползунок iOS/Safari */}
+        {/* скрываем scrollbar iOS */}
         <style>
           {`
             ::-webkit-scrollbar {
@@ -372,15 +363,15 @@ function MobileVersion() {
               >
                 <img
                   src={slide.src}
-                    alt=""
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                </div>
+                  alt=""
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              </div>
             ) : (
               slide.srcs.map((src, j) => (
                 <div
@@ -388,7 +379,6 @@ function MobileVersion() {
                   style={{
                     width: '100%',
                     background: 'black',
-                    borderTop: 'none',
                   }}
                 >
                   <img
@@ -408,11 +398,9 @@ function MobileVersion() {
         ))}
       </div>
 
-      {/* MobileBottomBar — ВНЕ контейнера, всегда кликабелен */}
-      <MobileBottomBar
-        isPlaying={isPlaying}
-        onTogglePlay={() => setIsPlaying((p) => !p)}
-      />
+      {/* UI поверх */}
+      <MobileBottomBar />
+      <MobileHeader />
     </>
   );
 }
